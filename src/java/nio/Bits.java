@@ -1,26 +1,26 @@
 /*
- * Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
- * ORACLE PROPRIETARY/CONFIDENTIAL. Use is subject to license terms.
+ * Copyright (c) 2000, 2016, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
+ * This code is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 only, as
+ * published by the Free Software Foundation.  Oracle designates this
+ * particular file as subject to the "Classpath" exception as provided
+ * by Oracle in the LICENSE file that accompanied this code.
  *
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * version 2 for more details (a copy is included in the LICENSE file that
+ * accompanied this code).
  *
+ * You should have received a copy of the GNU General Public License version
+ * 2 along with this work; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 package java.nio;
@@ -835,191 +835,31 @@ class Bits {                            // package-private
         }
     }
 
-    /**
-     * Copy and unconditionally byte swap 16 bit elements from a heap array to off-heap memory
-     *
-     * @param src
-     *        the source array, must be a 16-bit primitive array type
-     * @param srcPos
-     *        byte offset within source array of the first element to read
-     * @param dstAddr
-     *        destination address
-     * @param length
-     *        number of bytes to copy
-     */
-    static void copyFromCharArray(Object src, long srcPos, long dstAddr, long length) {
-        copySwapMemory(src, unsafe.arrayBaseOffset(src.getClass()) + srcPos, null, dstAddr, length, 2);
+    static void copyFromCharArray(Object src, long srcPos, long dstAddr,
+                                  long length)
+    {
+        copyFromShortArray(src, srcPos, dstAddr, length);
     }
 
-    /**
-     * Copy and unconditionally byte swap 16 bit elements from off-heap memory to a heap array
-     *
-     * @param srcAddr
-     *        source address
-     * @param dst
-     *        destination array, must be a 16-bit primitive array type
-     * @param dstPos
-     *        byte offset within the destination array of the first element to write
-     * @param length
-     *        number of bytes to copy
-     */
-    static void copyToCharArray(long srcAddr, Object dst, long dstPos, long length) {
-        copySwapMemory(null, srcAddr, dst, unsafe.arrayBaseOffset(dst.getClass()) + dstPos, length, 2);
+    static void copyToCharArray(long srcAddr, Object dst, long dstPos,
+                                long length)
+    {
+        copyToShortArray(srcAddr, dst, dstPos, length);
     }
 
-    /**
-     * Copy and unconditionally byte swap 16 bit elements from a heap array to off-heap memory
-     *
-     * @param src
-     *        the source array, must be a 16-bit primitive array type
-     * @param srcPos
-     *        byte offset within source array of the first element to read
-     * @param dstAddr
-     *        destination address
-     * @param length
-     *        number of bytes to copy
-     */
-    static void copyFromShortArray(Object src, long srcPos, long dstAddr, long length) {
-        copySwapMemory(src, unsafe.arrayBaseOffset(src.getClass()) + srcPos, null, dstAddr, length, 2);
-    }
+    static native void copyFromShortArray(Object src, long srcPos, long dstAddr,
+                                          long length);
+    static native void copyToShortArray(long srcAddr, Object dst, long dstPos,
+                                        long length);
 
-    /**
-     * Copy and unconditionally byte swap 16 bit elements from off-heap memory to a heap array
-     *
-     * @param srcAddr
-     *        source address
-     * @param dst
-     *        destination array, must be a 16-bit primitive array type
-     * @param dstPos
-     *        byte offset within the destination array of the first element to write
-     * @param length
-     *        number of bytes to copy
-     */
-    static void copyToShortArray(long srcAddr, Object dst, long dstPos, long length) {
-        copySwapMemory(null, srcAddr, dst, unsafe.arrayBaseOffset(dst.getClass()) + dstPos, length, 2);
-    }
+    static native void copyFromIntArray(Object src, long srcPos, long dstAddr,
+                                        long length);
+    static native void copyToIntArray(long srcAddr, Object dst, long dstPos,
+                                      long length);
 
-    /**
-     * Copy and unconditionally byte swap 32 bit elements from a heap array to off-heap memory
-     *
-     * @param src
-     *        the source array, must be a 32-bit primitive array type
-     * @param srcPos
-     *        byte offset within source array of the first element to read
-     * @param dstAddr
-     *        destination address
-     * @param length
-     *        number of bytes to copy
-     */
-    static void copyFromIntArray(Object src, long srcPos, long dstAddr, long length) {
-        copySwapMemory(src, unsafe.arrayBaseOffset(src.getClass()) + srcPos, null, dstAddr, length, 4);
-    }
-
-    /**
-     * Copy and unconditionally byte swap 32 bit elements from off-heap memory to a heap array
-     *
-     * @param srcAddr
-     *        source address
-     * @param dst
-     *        destination array, must be a 32-bit primitive array type
-     * @param dstPos
-     *        byte offset within the destination array of the first element to write
-     * @param length
-     *        number of bytes to copy
-     */
-    static void copyToIntArray(long srcAddr, Object dst, long dstPos, long length) {
-        copySwapMemory(null, srcAddr, dst, unsafe.arrayBaseOffset(dst.getClass()) + dstPos, length, 4);
-    }
-
-    /**
-     * Copy and unconditionally byte swap 64 bit elements from a heap array to off-heap memory
-     *
-     * @param src
-     *        the source array, must be a 64-bit primitive array type
-     * @param srcPos
-     *        byte offset within source array of the first element to read
-     * @param dstAddr
-     *        destination address
-     * @param length
-     *        number of bytes to copy
-     */
-    static void copyFromLongArray(Object src, long srcPos, long dstAddr, long length) {
-        copySwapMemory(src, unsafe.arrayBaseOffset(src.getClass()) + srcPos, null, dstAddr, length, 8);
-    }
-
-    /**
-     * Copy and unconditionally byte swap 64 bit elements from off-heap memory to a heap array
-     *
-     * @param srcAddr
-     *        source address
-     * @param dst
-     *        destination array, must be a 64-bit primitive array type
-     * @param dstPos
-     *        byte offset within the destination array of the first element to write
-     * @param length
-     *        number of bytes to copy
-     */
-    static void copyToLongArray(long srcAddr, Object dst, long dstPos, long length) {
-        copySwapMemory(null, srcAddr, dst, unsafe.arrayBaseOffset(dst.getClass()) + dstPos, length, 8);
-    }
-
-    private static boolean isPrimitiveArray(Class<?> c) {
-        Class<?> componentType = c.getComponentType();
-        return componentType != null && componentType.isPrimitive();
-    }
-
-    private native static void copySwapMemory0(Object srcBase, long srcOffset,
-                                        Object destBase, long destOffset,
-                                        long bytes, long elemSize);
-
-    /**
-     * Copies all elements from one block of memory to another block,
-     * *unconditionally* byte swapping the elements on the fly.
-     *
-     * <p>This method determines each block's base address by means of two parameters,
-     * and so it provides (in effect) a <em>double-register</em> addressing mode,
-     * as discussed in {@link sun.misc.Unsafe#getInt(Object,long)}.  When the
-     * object reference is null, the offset supplies an absolute base address.
-     *
-     * @since 8u201
-     */
-    private static void copySwapMemory(Object srcBase, long srcOffset,
-                               Object destBase, long destOffset,
-                               long bytes, long elemSize) {
-        if (bytes < 0) {
-            throw new IllegalArgumentException();
-        }
-        if (elemSize != 2 && elemSize != 4 && elemSize != 8) {
-            throw new IllegalArgumentException();
-        }
-        if (bytes % elemSize != 0) {
-            throw new IllegalArgumentException();
-        }
-        if ((srcBase == null && srcOffset == 0) ||
-            (destBase == null && destOffset == 0)) {
-            throw new NullPointerException();
-        }
-
-        // Must be off-heap, or primitive heap arrays
-        if (srcBase != null && (srcOffset < 0 || !isPrimitiveArray(srcBase.getClass()))) {
-            throw new IllegalArgumentException();
-        }
-        if (destBase != null && (destOffset < 0 || !isPrimitiveArray(destBase.getClass()))) {
-            throw new IllegalArgumentException();
-        }
-
-        // Sanity check size and offsets on 32-bit platforms. Most
-        // significant 32 bits must be zero.
-        if (unsafe.addressSize() == 4 &&
-            (bytes >>> 32 != 0 || srcOffset >>> 32 != 0 || destOffset >>> 32 != 0)) {
-            throw new IllegalArgumentException();
-        }
-
-        if (bytes == 0) {
-            return;
-        }
-
-        copySwapMemory0(srcBase, srcOffset, destBase, destOffset, bytes, elemSize);
-    }
+    static native void copyFromLongArray(Object src, long srcPos, long dstAddr,
+                                         long length);
+    static native void copyToLongArray(long srcAddr, Object dst, long dstPos,
+                                       long length);
 
 }

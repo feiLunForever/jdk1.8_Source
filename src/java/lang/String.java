@@ -1,3 +1,28 @@
+/*
+ * Copyright (c) 1994, 2013, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * This code is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 only, as
+ * published by the Free Software Foundation.  Oracle designates this
+ * particular file as subject to the "Classpath" exception as provided
+ * by Oracle in the LICENSE file that accompanied this code.
+ *
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * version 2 for more details (a copy is included in the LICENSE file that
+ * accompanied this code).
+ *
+ * You should have received a copy of the GNU General Public License version
+ * 2 along with this work; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
+ */
+
 package java.lang;
 
 import java.io.ObjectStreamField;
@@ -82,17 +107,16 @@ import java.util.regex.PatternSyntaxException;
  * @see     java.nio.charset.Charset
  * @since   JDK1.0
  */
-public final class String implements java.io.Serializable, Comparable<String>, CharSequence {
-    /**
-     * String底层是使用字符数组存储的
-     */
+
+public final class String
+    implements java.io.Serializable, Comparable<String>, CharSequence {
+    /** The value is used for character storage. */
     private final char value[];
 
-    /**
-     * 用于缓存字符串的哈希值，默认为0
-     */
-    private int hash;
+    /** Cache the hash code for the string */
+    private int hash; // Default to 0
 
+    /** use serialVersionUID from JDK 1.0.2 for interoperability */
     private static final long serialVersionUID = -6849794470754667710L;
 
     /**
@@ -588,9 +612,12 @@ public final class String implements java.io.Serializable, Comparable<String>, C
     }
 
     /**
-     * 获取字符串的长度，此方法返回等于字符串中16位Unicode字符数的任何字符串的长度
+     * Returns the length of this string.
+     * The length is equal to the number of <a href="Character.html#unicode">Unicode
+     * code units</a> in the string.
      *
-     * @return 返回字符串的长度
+     * @return  the length of the sequence of characters represented by this
+     *          object.
      */
     public int length() {
         return value.length;
@@ -3034,10 +3061,12 @@ public final class String implements java.io.Serializable, Comparable<String>, C
     }
 
     /**
-     * 将 boolean 变量转换成字符串
+     * Returns the string representation of the {@code boolean} argument.
      *
-     * @param b boolean 变量
-     * @return 如果参数为 true，返回字符串"true"； 否则，返回"false"。
+     * @param   b   a {@code boolean}.
+     * @return  if the argument is {@code true}, a string equal to
+     *          {@code "true"} is returned; otherwise, a string equal to
+     *          {@code "false"} is returned.
      */
     public static String valueOf(boolean b) {
         return b ? "true" : "false";
