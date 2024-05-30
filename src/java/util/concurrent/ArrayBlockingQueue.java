@@ -107,13 +107,13 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
      * found in any textbook.
      */
 
-    /** Main lock guarding all access */
+    /** 提供独占锁机制，来保护竞争的资源 */
     final ReentrantLock lock;
 
-    /** Condition for waiting takes */
+    /** 表示"锁的非空条件"。当某线程想从队列中获取数据的时候，而此时队列中的数据为空，则该线程通过notEmpty.await()方法进行等待；当其他线程向队列中插入元素之后，就调用notEmpty.signal()方法进行唤醒之前等待的线程 */
     private final Condition notEmpty;
 
-    /** Condition for waiting puts */
+    /** 表示“锁满的条件“。当某个线程向队列中插入元素，而此时队列已满时，该线程等待，即阻塞通过notFull.wait()方法；其他线程从队列中取出元素之后，就唤醒该等待的线程，这个线程调用notFull.signal()方法 */
     private final Condition notFull;
 
     /**
@@ -151,6 +151,7 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
     }
 
     /**
+     * 元素放入队列，注意调用这个方法时都要先加锁
      * Inserts element at current put position, advances, and signals.
      * Call only when holding lock.
      */
@@ -159,15 +160,15 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
         // assert items[putIndex] == null;
         final Object[] items = this.items;
         items[putIndex] = x;
-        if (++putIndex == items.length)
+        if (++putIndex == items.length) // 循环队列，计算下标
             putIndex = 0;
-        count++;
-        notEmpty.signal();
+        count++; // 当前拥有元素个数加1
+        notEmpty.signal(); // 有一个元素加入成功，那肯定队列不为空
     }
 
     /**
      * Extracts element at current take position, advances, and signals.
-     * Call only when holding lock.
+     * 元素出队，注意调用这个方法时都要先加锁
      */
     private E dequeue() {
         // assert lock.getHoldCount() == 1;
@@ -178,10 +179,10 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
         items[takeIndex] = null;
         if (++takeIndex == items.length)
             takeIndex = 0;
-        count--;
+        count--; // 当前拥有元素个数减1
         if (itrs != null)
             itrs.elementDequeued();
-        notFull.signal();
+        notFull.signal(); // 有一个元素取出成功，那肯定队列不满
         return x;
     }
 
@@ -298,6 +299,9 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
     }
 
     /**
+     *
+     * 添加一个元素，其实super.add里面调用了offer方法
+     *
      * Inserts the specified element at the tail of this queue if it is
      * possible to do so immediately without exceeding the queue's capacity,
      * returning {@code true} upon success and throwing an
@@ -313,6 +317,9 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
     }
 
     /**
+     *
+     * 加入成功返回true,否则返回false
+     *
      * Inserts the specified element at the tail of this queue if it is
      * possible to do so immediately without exceeding the queue's capacity,
      * returning {@code true} upon success and {@code false} if this queue
@@ -324,12 +331,12 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
     public boolean offer(E e) {
         checkNotNull(e);
         final ReentrantLock lock = this.lock;
-        lock.lock();
+        lock.lock(); // 上锁
         try {
-            if (count == items.length)
+            if (count == items.length) // 超过数组的容量
                 return false;
             else {
-                enqueue(e);
+                enqueue(e); // 放入元素
                 return true;
             }
         } finally {
@@ -338,6 +345,8 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
     }
 
     /**
+     * 如果队列已满的话，就会等待
+     *
      * Inserts the specified element at the tail of this queue, waiting
      * for space to become available if the queue is full.
      *
@@ -347,10 +356,10 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
     public void put(E e) throws InterruptedException {
         checkNotNull(e);
         final ReentrantLock lock = this.lock;
-        lock.lockInterruptibly();
+        lock.lockInterruptibly(); // 和lock()方法的区别是让它在阻塞时也可抛出异常跳出
         try {
             while (count == items.length)
-                notFull.await();
+                notFull.await(); // 这里就是阻塞了，要注意。如果运行到这里，那么它会释放上面的锁，一直等到notify
             enqueue(e);
         } finally {
             lock.unlock();
@@ -385,6 +394,7 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
         }
     }
 
+    // 实现的方法，如果当前队列为空，返回null
     public E poll() {
         final ReentrantLock lock = this.lock;
         lock.lock();
@@ -395,18 +405,20 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
         }
     }
 
+    // 实现的方法，如果当前队列为空，一直阻塞
     public E take() throws InterruptedException {
         final ReentrantLock lock = this.lock;
         lock.lockInterruptibly();
         try {
             while (count == 0)
-                notEmpty.await();
+                notEmpty.await(); // 队列为空，阻塞方法
             return dequeue();
         } finally {
             lock.unlock();
         }
     }
 
+    // 带有超时时间的取元素方法，否则返回Null
     public E poll(long timeout, TimeUnit unit) throws InterruptedException {
         long nanos = unit.toNanos(timeout);
         final ReentrantLock lock = this.lock;
@@ -415,9 +427,9 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
             while (count == 0) {
                 if (nanos <= 0)
                     return null;
-                nanos = notEmpty.awaitNanos(nanos);
+                nanos = notEmpty.awaitNanos(nanos); // 超时等待
             }
-            return dequeue();
+            return dequeue(); // 取得元素
         } finally {
             lock.unlock();
         }
