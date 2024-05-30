@@ -1044,37 +1044,50 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
      *         workerCount is decremented
      */
     private Runnable getTask() {
-        boolean timedOut = false; // Did the last poll() time out?
+        boolean timedOut = false; // 表示当前线程获取任务是否超时； 默认 false, 未超时
 
-        for (;;) {
+        for (;;) { // 自旋
             int c = ctl.get();
-            int rs = runStateOf(c);
+            int rs = runStateOf(c);  // 获取线程池当前运行状态
 
             // Check if queue empty only if necessary.
-            if (rs >= SHUTDOWN && (rs >= STOP || workQueue.isEmpty())) {
+            if (rs >= SHUTDOWN && (rs >= STOP || workQueue.isEmpty())) { // 线程池的状态已经是`STOP`，`TIDYING`, `TERMINATED`，或者是`SHUTDOWN`且工作队列为空
                 decrementWorkerCount();
                 return null;
             }
 
-            int wc = workerCountOf(c);
+            int wc = workerCountOf(c); // 获取线程池中的线程数量
 
-            // Are workers subject to culling?
+            /**
+             * true: 表示当前这个线程 获取 task 时 是支持超时机制的
+             * false: 表示当前线程不支持超时机制。 核心线程数量内的线程会使用 queue.take();
+             * allowCoreThreadTimeOut == ture 表示核心线程数量内的线程，可以被回收； false不可以被回收
+             * wc > corePoolSize :  当前线程池中的数量时大于核心线程数的。
+             */
             boolean timed = allowCoreThreadTimeOut || wc > corePoolSize;
 
+            /**
+             * 条件1:(wc > maximumPoolSize || (timed && timedOut)： 为ture 不代表线程一定返回null
+             *    1.1 wc > maximumPoolSize ： 可能外部线程将线程池最大线程数设置为比初始化时的要小
+             *    1.2  timed && timedOut ：当前线程使用poll方式获取task。 上一次循环时， 使用 pool方式获取任务时，超时了。
+             * 条件二:   (wc > 1 || workQueue.isEmpty())
+             *    2.1: wc > 1： 说明当前线程池中，还有其他线程；当前线程可以直接回收，返回null。
+             *    2.2: 说明当前任务队列已经为null。 最后一个线程也可以放心退出
+             */
             if ((wc > maximumPoolSize || (timed && timedOut))
                 && (wc > 1 || workQueue.isEmpty())) {
                 if (compareAndDecrementWorkerCount(c))
                     return null;
-                continue;
+                continue; // CAS失败，就继续；再次自旋时，timed可能为 false
             }
 
             try {
                 Runnable r = timed ?
                     workQueue.poll(keepAliveTime, TimeUnit.NANOSECONDS) :
-                    workQueue.take();
+                    workQueue.take(); // 获取任务的逻辑
                 if (r != null)
                     return r;
-                timedOut = true;
+                timedOut = true; // 说明当前线程超时了。
             } catch (InterruptedException retry) {
                 timedOut = false;
             }
@@ -1126,22 +1139,25 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
      */
     final void runWorker(Worker w) {
         Thread wt = Thread.currentThread();
-        Runnable task = w.firstTask;
+        Runnable task = w.firstTask; // 获取提交的任务
         w.firstTask = null;
-        w.unlock(); // allow interrupts
+        w.unlock(); // 将Worker的state归位为0,代表可以被中断
         boolean completedAbruptly = true;
         try {
+            // 死循环  如果提交的任务不为空 或者从阻塞队列中取值，没有任务就阻塞等待任务
+            // 获取任务的第一个方式,就是执行execute submit时,传入的任务直接处理
+            // 获取任务的第二个方式,就是从工作队列中获取任务执行
             while (task != null || (task = getTask()) != null) {
                 w.lock();
                 // If pool is stopping, ensure thread is interrupted;
                 // if not, ensure thread is not interrupted.  This
                 // requires a recheck in second case to deal with
                 // shutdownNow race while clearing interrupt
-                if ((runStateAtLeast(ctl.get(), STOP) ||
-                     (Thread.interrupted() &&
+                if ((runStateAtLeast(ctl.get(), STOP) || // 如果线程状态变为stop状态,必须将当前线程中断
+                     (Thread.interrupted() && // 查看中断标记位并归位,如果为false,说明不是stop,如果变为true,需要再次查看是否是并发操作导致线程池stop状态
                       runStateAtLeast(ctl.get(), STOP))) &&
                     !wt.isInterrupted())
-                    wt.interrupt();
+                    wt.interrupt(); //  将中断标记为设置为true
                 try {
                     beforeExecute(wt, task);
                     Throwable thrown = null;
@@ -1157,9 +1173,9 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
                         afterExecute(task, thrown);
                     }
                 } finally {
-                    task = null;
-                    w.completedTasks++;
-                    w.unlock();
+                    task = null; // 任务执行完毕后将task置为null
+                    w.completedTasks++; // 执行成功的任务个数+1
+                    w.unlock(); // 将state标记为置为0
                 }
             }
             completedAbruptly = false;
