@@ -176,8 +176,9 @@ public class Semaphore implements java.io.Serializable {
 
         final int nonfairTryAcquireShared(int acquires) {
             for (;;) {
-                int available = getState();
-                int remaining = available - acquires;
+                int available = getState(); // 获取到AQS的资源 state
+                int remaining = available - acquires; // 获取锁时，将可用值state减一（注意这里可不是排他锁时候的+1）
+                // 如果剩余可用资源<0说明已经没有资源可用，直接返回负数，如果cas成功则说明还有资源可用，返回剩余资源数量remaining
                 if (remaining < 0 ||
                     compareAndSetState(available, remaining))
                     return remaining;
@@ -187,7 +188,7 @@ public class Semaphore implements java.io.Serializable {
         protected final boolean tryReleaseShared(int releases) {
             for (;;) {
                 int current = getState();
-                int next = current + releases;
+                int next = current + releases; // 对state进行+1 ，即释放1个资源，让给其他等待的共享节点
                 if (next < current) // overflow
                     throw new Error("Maximum permit count exceeded");
                 if (compareAndSetState(current, next))

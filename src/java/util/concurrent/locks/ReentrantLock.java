@@ -127,34 +127,34 @@ public class ReentrantLock implements Lock, java.io.Serializable {
          * subclasses, but both need nonfair try for trylock method.
          */
         final boolean nonfairTryAcquire(int acquires) {
-            final Thread current = Thread.currentThread();
-            int c = getState();
-            if (c == 0) {
-                if (compareAndSetState(0, acquires)) {
-                    setExclusiveOwnerThread(current);
+            final Thread current = Thread.currentThread(); // 获取当前线程
+            int c = getState(); // 获取AQS中的state
+            if (c == 0) { // 如果state等于0说明此时没有线程占有锁
+                if (compareAndSetState(0, acquires)) { // 直接cas尝试将state占位己有
+                    setExclusiveOwnerThread(current); // 设置AQS中的独占线程字段 为当前线程
                     return true;
                 }
             }
-            else if (current == getExclusiveOwnerThread()) {
+            else if (current == getExclusiveOwnerThread()) { // 如果state不是0 则判断当前占有锁的线程是否是当前线程，如果是，表示此线程重入抢锁，对state进行+1
                 int nextc = c + acquires;
                 if (nextc < 0) // overflow
                     throw new Error("Maximum lock count exceeded");
                 setState(nextc);
                 return true;
             }
-            return false;
+            return false; // 抢锁失败 返回false
         }
 
         protected final boolean tryRelease(int releases) {
-            int c = getState() - releases;
-            if (Thread.currentThread() != getExclusiveOwnerThread())
+            int c = getState() - releases; // 获取到AQS的资源变量 state 并减一（注意 加锁和减锁的方法入参  永远是 1 ）
+            if (Thread.currentThread() != getExclusiveOwnerThread()) // 如果当前线程不是持有锁的线程（直接抛异常，你都没锁 你释放个嘚儿啊 哈哈）
                 throw new IllegalMonitorStateException();
             boolean free = false;
-            if (c == 0) {
+            if (c == 0) {  // 如果state=0了 则说明锁已经真正的释放了，则释放标志位true并且将占有线程置位null
                 free = true;
                 setExclusiveOwnerThread(null);
             }
-            setState(c);
+            setState(c); // 将释放锁之后的state（变量c）赋值给state
             return free;
         }
 
@@ -203,7 +203,7 @@ public class ReentrantLock implements Lock, java.io.Serializable {
          * acquire on failure.
          */
         final void lock() {
-            if (compareAndSetState(0, 1))
+            if (compareAndSetState(0, 1))  // 一上来就修改state的值，不排队
                 setExclusiveOwnerThread(Thread.currentThread());
             else
                 acquire(1);
@@ -230,22 +230,30 @@ public class ReentrantLock implements Lock, java.io.Serializable {
          */
         protected final boolean tryAcquire(int acquires) {
             final Thread current = Thread.currentThread();
-            int c = getState();
-            if (c == 0) {
+            int c = getState(); // 获取AQS中的state
+            if (c == 0) {  // 如果state等于0说明此时没有线程占有锁
+                // hasQueuedPredecessors 判断等待队列中是否已经有其他的线程在排队，如果有其他的线程在排队，就需要排队，没有，就不需要排队。
+                // 此方法返回true，代表当前线程需要排队，返回false，表示当前线程不用排队
+
+                // 不用排队的话 直接cas尝试将state占位己有
                 if (!hasQueuedPredecessors() &&
                     compareAndSetState(0, acquires)) {
-                    setExclusiveOwnerThread(current);
-                    return true;
+                    setExclusiveOwnerThread(current); // 设置AQS中的独占线程字段 为当前线程
+                    return true; // 返回true 代表获取锁成功
                 }
             }
+            // 如果state不是0 则判断当前占有锁的线程是否是当前线程，如果是，
+            // 表示此线程重入抢锁，对state进行+1
             else if (current == getExclusiveOwnerThread()) {
-                int nextc = c + acquires;
+                int nextc = c + acquires; // 将state 累加
                 if (nextc < 0)
                     throw new Error("Maximum lock count exceeded");
                 setState(nextc);
+                // 重入线程，只需将state+1， head信息不需要变，也不许要到等待队列排队，
+                // 直接返回true加锁成功
                 return true;
             }
-            return false;
+            return false; // 抢锁失败 返回false
         }
     }
 
