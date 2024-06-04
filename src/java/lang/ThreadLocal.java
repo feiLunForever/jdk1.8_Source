@@ -157,17 +157,17 @@ public class ThreadLocal<T> {
      * @return the current thread's value of this thread-local
      */
     public T get() {
-        Thread t = Thread.currentThread();
-        ThreadLocalMap map = getMap(t);
+        Thread t = Thread.currentThread(); // 获取当前线程
+        ThreadLocalMap map = getMap(t); // 获取线程中的map（currentThread.threadLocals）
         if (map != null) {
-            ThreadLocalMap.Entry e = map.getEntry(this);
+            ThreadLocalMap.Entry e = map.getEntry(this);  // 将自身当作key 获取值
             if (e != null) {
                 @SuppressWarnings("unchecked")
                 T result = (T)e.value;
                 return result;
             }
         }
-        return setInitialValue();
+        return setInitialValue(); // 如果map为空，则获取初始化方法
     }
 
     /**
@@ -197,12 +197,12 @@ public class ThreadLocal<T> {
      *        this thread-local.
      */
     public void set(T value) {
-        Thread t = Thread.currentThread();
-        ThreadLocalMap map = getMap(t);
+        Thread t = Thread.currentThread(); // 获取当前的线程
+        ThreadLocalMap map = getMap(t); // 从当前的线程中获取ThreadLocalMap（currentThread.threadLocals）
         if (map != null)
-            map.set(this, value);
+            map.set(this, value); // 如果不为空，直接将数据放到map中
         else
-            createMap(t, value);
+            createMap(t, value); // 如果为空则创建map，并将数据放到map中去
     }
 
     /**
@@ -460,19 +460,19 @@ public class ThreadLocal<T> {
 
             Entry[] tab = table;
             int len = tab.length;
-            int i = key.threadLocalHashCode & (len-1);
+            int i = key.threadLocalHashCode & (len-1); // 计算 ThreadLocal 的hash值，定位到数组的index位置
 
             for (Entry e = tab[i];
                  e != null;
-                 e = tab[i = nextIndex(i, len)]) {
+                 e = tab[i = nextIndex(i, len)]) { // 如果位置i的不为空，并且key != entry，那就找下一个空的位置，直到找到为空为止
                 ThreadLocal<?> k = e.get();
 
-                if (k == key) {
+                if (k == key) { // 如果位置i不为空，并且 ThreadLocal 相等，就覆盖 Entry 中的 value
                     e.value = value;
                     return;
                 }
 
-                if (k == null) {
+                if (k == null) { // 如果当前位置是空的，就初始化一个 Entry 对象放在位置i上
                     replaceStaleEntry(key, value, i);
                     return;
                 }
@@ -481,7 +481,7 @@ public class ThreadLocal<T> {
             tab[i] = new Entry(key, value);
             int sz = ++size;
             if (!cleanSomeSlots(i, sz) && sz >= threshold)
-                rehash();
+                rehash();  // 重新进行哈希运算
         }
 
         /**
@@ -689,8 +689,8 @@ public class ThreadLocal<T> {
                 Entry e = oldTab[j];
                 if (e != null) {
                     ThreadLocal<?> k = e.get();
-                    if (k == null) {
-                        e.value = null; // Help the GC
+                    if (k == null) { // 如果key为空
+                        e.value = null; // 将value也设置为空 以方便 value 被jvm回收
                     } else {
                         int h = k.threadLocalHashCode & (newLen - 1);
                         while (newTab[h] != null)
