@@ -83,8 +83,19 @@ public class LongAdder extends Striped64 implements Serializable {
      */
     public void add(long x) {
         Cell[] as; long b, v; int m; Cell a;
+        // 进入 if 的两个条件
+        // 条件1：as 有值, 表示已经发生过竞争, 进入 if
+        // 条件2：cas 给 base 累加时失败了, 表示 base 发生了竞争, 进入 if
+        // 由于 cells 是懒惰初始化，刚开始是null，会先进行casBase操作
         if ((as = cells) != null || !casBase(b = base, b + x)) {
             boolean uncontended = true;
+             /*
+                条件1: cells为空，说明正在出现竞争，上面是从条件2过来的，说明!casBase(b = base, b + x))=true
+                      会通过调用longAccumulate(x, null, uncontended)新建一个数组，默认长度是2
+                条件2: 默认会新建一个数组长度为2的数组，m = as.length - 1 < 0 应该不会出现
+                条件3: 当前线程所在的cell为空，说明当前线程还没有更新过cell，uncontended为true，应初始化一个cell
+                条件4: 更新当前线程所在的cell失败，说明竞争很激烈，多个线程hash到同一个Cell，uncontended为false，应扩容
+			**/
             if (as == null || (m = as.length - 1) < 0 ||
                 (a = as[getProbe() & m]) == null ||
                 !(uncontended = a.cas(v = a.value, v + x)))

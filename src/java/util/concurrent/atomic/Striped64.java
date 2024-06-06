@@ -116,11 +116,13 @@ abstract class Striped64 extends Number {
      *
      * JVM intrinsics note: It would be possible to use a release-only
      * form of CAS here, if it were provided.
+     * <p>
+     * 防止缓存行伪共享 注解
      */
-    @sun.misc.Contended static final class Cell {
-        volatile long value;
+    @sun.misc.Contended static final class Cell { // Cell 即为累加单元
+        volatile long value; // 保存累加结果
         Cell(long x) { value = x; }
-        final boolean cas(long cmp, long val) {
+        final boolean cas(long cmp, long val) { // 最重要的方法, 用来 cas 方式进行累加, cmp 表示旧值, val 表示新值
             return UNSAFE.compareAndSwapLong(this, valueOffset, cmp, val);
         }
 
@@ -139,22 +141,29 @@ abstract class Striped64 extends Number {
         }
     }
 
-    /** Number of CPUS, to place bound on table size */
+    /** CPU数量，即Cells数组的最大长度 */
     static final int NCPU = Runtime.getRuntime().availableProcessors();
 
     /**
-     * Table of cells. When non-null, size is a power of 2.
+     * 存放Cell的hash表，大小为2的幂
+     * <p>
+     * 这里的Cell是Striped64的静态内部类，懒惰初始化
      */
     transient volatile Cell[] cells;
 
     /**
-     * Base value, used mainly when there is no contention, but also as
-     * a fallback during table initialization races. Updated via CAS.
+     * 1.在开始没有竞争的情况下，将累加值累加到base；
+     * <p>
+     * 2.在cells初始化的过程中，cells处于不可用的状态，这时候也会尝试将通过cas操作值累加到base
      */
     transient volatile long base;
 
     /**
-     * Spinlock (locked via CAS) used when resizing and/or creating Cells.
+     * cellsBusy，它有两个值0或1，它的作用是当要修改cells数组时加锁,<p>
+     * 	防止多线程同时修改cells数组(也称cells表)，0为无锁，1位加锁，加锁的状况有三种: <p>
+     * 	(1)cells数组初始化的时候；<p>
+     *  (2)cells数组扩容的时候；<p>
+     *  (3)如果cells数组中某个元素为null，给这个位置创建新的Cell对象的时候；<p>
      */
     transient volatile int cellsBusy;
 
