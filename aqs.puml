@@ -1,0 +1,16 @@
+@startuml
+abstract class java.util.concurrent.locks.AbstractQueuedSynchronizer {
+}
+class java.util.concurrent.locks.AbstractQueuedSynchronizer$Node {
+}
+class java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject {
+}
+
+
+java.util.concurrent.locks.Serializable <|.. java.util.concurrent.locks.AbstractQueuedSynchronizer
+java.util.concurrent.locks.AbstractOwnableSynchronizer <|-- java.util.concurrent.locks.AbstractQueuedSynchronizer
+java.util.concurrent.locks.AbstractQueuedSynchronizer +.. java.util.concurrent.locks.AbstractQueuedSynchronizer$Node
+java.util.concurrent.locks.AbstractQueuedSynchronizer +.. java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject
+java.util.concurrent.locks.Condition <|.. java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject
+java.util.concurrent.locks.Serializable <|.. java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject
+@enduml
