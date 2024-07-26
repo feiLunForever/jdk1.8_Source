@@ -585,6 +585,9 @@ public class ThreadLocal<T> {
          * @return the index of the next null slot after staleSlot
          * (all between staleSlot and this slot will have been checked
          * for expunging).
+         *
+         * <p></p>
+         * 清除表中所有的陈旧条目
          */
         private int expungeStaleEntry(int staleSlot) {
             Entry[] tab = table;
@@ -645,6 +648,13 @@ public class ThreadLocal<T> {
          * seems to work well.)
          *
          * @return true if any stale entries have been removed.
+         *
+         */
+        /**
+         * 返回true ：表示存在“陈旧”的Entry且已经被清除（但并不表示完全清除所有的“陈旧”Entry，只表示执行过这种操作)
+         * <p></p>
+         * 进行一定次数的循环，从当位置i开始往后寻找脏entry并清理掉，当清理脏entry时，使用expungeStaleEntry方法，从当前脏entry会再往后寻找脏entry进行清理，碰到null时结束。
+         * 可以看到这个清理的过程只是覆盖了一段范围，并不是全部区间。
          */
         private boolean cleanSomeSlots(int i, int n) {
             boolean removed = false;
@@ -656,7 +666,7 @@ public class ThreadLocal<T> {
                 if (e != null && e.get() == null) {
                     n = len;
                     removed = true;
-                    i = expungeStaleEntry(i);
+                    i = expungeStaleEntry(i); /**清除表中所有的陈旧条目**/
                 }
             } while ( (n >>>= 1) != 0);
             return removed;
